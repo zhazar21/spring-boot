@@ -82,20 +82,22 @@ public class EnableAutoConfigurationImportSelector
 			return NO_IMPORTS;
 		}
 		try {
-			return doSelectImports(metadata);
+			return selectImports(metadata,
+					ConditionEvaluationReport.get(getBeanFactory()));
 		}
 		catch (IOException ex) {
 			throw new IllegalStateException(ex);
 		}
 	}
 
-	private String[] doSelectImports(AnnotationMetadata metadata) throws IOException {
-		ConditionEvaluationReport report = ConditionEvaluationReport
-				.get(getBeanFactory());
+	private String[] selectImports(AnnotationMetadata metadata,
+			ConditionEvaluationReport report) throws IOException {
 		AnnotationAttributes attributes = getAttributes(metadata);
 		List<String> configurations = getCandidateConfigurations(metadata, attributes);
 		configurations = removeDuplicates(configurations);
-		Set<String> exclusions = removeExclusions(metadata, attributes, configurations);
+		Set<String> exclusions = getExclusions(metadata, attributes);
+		checkExcludedClasses(configurations, exclusions);
+		configurations.removeAll(exclusions);
 		configurations = removeAutoConfigurationConditionNonMatches(configurations,
 				report);
 		configurations = sort(configurations);
@@ -250,14 +252,6 @@ public class EnableAutoConfigurationImportSelector
 
 	protected final <T> List<T> removeDuplicates(List<T> list) {
 		return new ArrayList<T>(new LinkedHashSet<T>(list));
-	}
-
-	private Set<String> removeExclusions(AnnotationMetadata metadata,
-			AnnotationAttributes attributes, List<String> configurations) {
-		Set<String> exclusions = getExclusions(metadata, attributes);
-		checkExcludedClasses(configurations, exclusions);
-		configurations.removeAll(exclusions);
-		return exclusions;
 	}
 
 	private List<String> removeAutoConfigurationConditionNonMatches(
