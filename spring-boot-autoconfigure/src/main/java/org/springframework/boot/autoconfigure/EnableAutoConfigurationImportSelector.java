@@ -17,6 +17,7 @@
 package org.springframework.boot.autoconfigure;
 
 import org.springframework.context.annotation.DeferredImportSelector;
+import org.springframework.core.type.AnnotationMetadata;
 
 /**
  * {@link DeferredImportSelector} to handle {@link EnableAutoConfiguration
@@ -34,5 +35,15 @@ import org.springframework.context.annotation.DeferredImportSelector;
 @Deprecated
 public class EnableAutoConfigurationImportSelector
 		extends AutoConfigurationImportSelector {
+
+	@Override
+	protected boolean isEnabled(AnnotationMetadata metadata) {
+		if (getClass().equals(EnableAutoConfigurationImportSelector.class)) {
+			return getEnvironment().getProperty(
+					EnableAutoConfiguration.ENABLED_OVERRIDE_PROPERTY, Boolean.class,
+					true);
+		}
+		return true;
+	}
 
 }
