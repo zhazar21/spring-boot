@@ -87,6 +87,7 @@ public class AutoConfigurationImportSelector
 			Set<String> exclusions = getExclusions(metadata, attributes);
 			checkExcludedClasses(configurations, exclusions);
 			configurations.removeAll(exclusions);
+			configurations = filter(configurations);
 			configurations = sort(configurations);
 			fireAutoConfigurationImportListeners(configurations, exclusions);
 			return configurations.toArray(new String[configurations.size()]);
@@ -211,6 +212,29 @@ public class AutoConfigurationImportSelector
 				"spring.autoconfigure.");
 		String[] exclude = resolver.getProperty("exclude", String[].class);
 		return (Arrays.asList(exclude == null ? new String[0] : exclude));
+	}
+
+	private List<String> filter(List<String> configurations) {
+		String[] candidates = configurations.toArray(new String[configurations.size()]);
+		boolean[] skip = new boolean[candidates.length];
+		for (AutoConfigurationImportFilter filter : getAutoConfigurationImportFilters()) {
+			boolean[] match = filter.match(candidates);
+			for (int i = 0; i < match.length; i++) {
+				skip[i] = skip[i] || !match[i];
+			}
+		}
+		List<String> result = new ArrayList<String>(candidates.length);
+		for (int i = 0; i < candidates.length; i++) {
+			if (!skip[i]) {
+				result.add(candidates[i]);
+			}
+		}
+		return new ArrayList<String>(result);
+	}
+
+	protected List<AutoConfigurationImportFilter> getAutoConfigurationImportFilters() {
+		return SpringFactoriesLoader.loadFactories(AutoConfigurationImportFilter.class,
+				this.beanClassLoader);
 	}
 
 	private List<String> sort(List<String> configurations) throws IOException {
